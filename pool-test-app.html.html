@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pool Medics — Water Testing</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pool Medics">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a2a4a;
+    --navy-mid: #1f3259;
+    --navy-card: #243868;
+    --navy-border: #2e4578;
+    --yellow: #f5c400;
+    --yellow-light: #ffd740;
+    --yellow-dim: rgba(245,196,0,0.12);
+    --white: #ffffff;
+    --text: #e8eaf0;
+    --text-muted: #8aaac8;
+    --ok: #2ecc7a;
+    --warn: #ff5a36;
+    --radius: 16px;
+    --wa-green: #25D366;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    background: var(--navy);
+    padding: 44px 24px 52px;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--navy-border);
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 32px;
+    background: var(--navy);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,196,0,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .brand-logo { height: 38px; width: auto; object-fit: contain; }
+  .brand-divider { width: 1px; height: 28px; background: var(--navy-border); }
+  .brand-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--yellow);
+  }
+
+  .hero-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 38px; font-weight: 700;
+    color: var(--white); line-height: 1.1;
+    margin-bottom: 8px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .hero-title span { color: var(--yellow); }
+  .hero-sub { color: var(--text-muted); font-size: 15px; font-weight: 300; line-height: 1.5; }
+
+  main { padding: 24px 20px 80px; max-width: 480px; margin: 0 auto; }
+
+  .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--navy-card); border: 2px solid var(--navy-border);
+    color: var(--text-muted); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .step-dot.active { background: var(--yellow); border-color: var(--yellow); color: var(--navy); box-shadow: 0 0 0 4px rgba(245,196,0,0.2); }
+  .step-dot.done { background: var(--ok); border-color: var(--ok); color: var(--navy); }
+  .step-line { flex: 1; height: 2px; background: var(--navy-border); border-radius: 2px; overflow: hidden; }
+  .step-line-fill { height: 100%; background: var(--ok); width: 0%; transition: width 0.5s ease; }
+
+  .card {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--yellow); margin-bottom: 18px;
+  }
+
+  /* POOL TYPE TOGGLE */
+  .pool-type-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .type-btn {
+    border: 1.5px solid var(--navy-border);
+    background: var(--navy); border-radius: 10px;
+    padding: 14px 12px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .type-btn:hover { border-color: var(--yellow); }
+  .type-btn.selected { border-color: var(--yellow); background: var(--yellow-dim); }
+  .type-btn .type-icon { font-size: 22px; margin-bottom: 4px; }
+  .type-btn .type-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .type-btn .type-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* POOL VOLUME CALCULATOR */
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .calc-field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+  .calc-field input {
+    width: 100%; border: 1.5px solid var(--navy-border); border-radius: 10px;
+    padding: 11px 14px; font-size: 16px; font-family: 'Barlow', sans-serif;
+    outline: none; background: var(--navy); color: var(--white);
+    -moz-appearance: textfield;
+  }
+  .calc-field input::-webkit-inner-spin-button, .calc-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .calc-field input:focus { border-color: var(--yellow); }
+
+  #vol-manual-input::-webkit-inner-spin-button,
+  #vol-manual-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .vol-result {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--navy); border: 1.5px solid var(--navy-border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .vol-result-label { font-size: 13px; color: var(--text-muted); }
+  .vol-result-value { font-size: 20px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; color: var(--yellow); letter-spacing: 0.5px; }
+  .vol-result.has-value { border-color: var(--yellow); background: var(--yellow-dim); }
+
+  /* INPUTS */
+  .param-group { margin-bottom: 20px; }
+  .param-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .param-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .param-range { font-size: 12px; color: var(--text-muted); }
+  .param-ideal { color: var(--ok); font-weight: 600; }
+  .input-row { display: flex; align-items: center; gap: 10px; }
+  .param-input {
+    flex: 1; border: 1.5px solid var(--navy-border); border-radius: 10px;
+    padding: 12px 16px; font-size: 18px; font-family: 'Barlow', sans-serif;
+    font-weight: 500; color: var(--white); background: var(--navy);
+    transition: border-color 0.2s; outline: none; -moz-appearance: textfield;
+  }
+  .param-input::-webkit-inner-spin-button, .param-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .param-input:focus { border-color: var(--yellow); }
+  .param-input.status-ok { border-color: var(--ok); }
+  .param-input.status-warn { border-color: var(--warn); }
+  .param-unit { font-size: 13px; color: var(--text-muted); min-width: 36px; }
+  .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: none; }
+  .status-badge.ok { background: rgba(46,204,122,0.15); color: var(--ok); display: inline-block; }
+  .status-badge.warn { background: rgba(255,90,54,0.15); color: var(--warn); display: inline-block; }
+
+  /* CONDITION TOGGLES */
+  .condition-row { display: flex; flex-direction: column; gap: 10px; }
+  .condition-toggle {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--navy); border: 1.5px solid var(--navy-border);
+    border-radius: 10px; padding: 14px 16px; cursor: pointer;
+    transition: all 0.2s; user-select: none;
+  }
+  .condition-toggle:hover { border-color: var(--yellow); }
+  .condition-toggle.active { border-color: var(--warn); background: rgba(255,90,54,0.06); }
+  .condition-icon { font-size: 22px; flex-shrink: 0; }
+  .condition-text { flex: 1; }
+  .condition-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .condition-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .condition-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--navy-border); flex-shrink: 0;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: transparent;
+  }
+  .condition-toggle.active .condition-check {
+    background: var(--warn); border-color: var(--warn);
+    color: white;
+  }
+
+  /* BUTTONS */
+  .btn-analyse {
+    width: 100%; background: var(--yellow); color: var(--navy);
+    border: none; border-radius: var(--radius); padding: 18px;
+    font-size: 16px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    box-shadow: 0 4px 24px rgba(245,196,0,0.3);
+  }
+  .btn-analyse:hover { background: var(--yellow-light); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(245,196,0,0.4); }
+  .btn-analyse:active { transform: translateY(0); }
+
+  /* RESULTS */
+  #results { display: none; }
+
+  .summary-bar {
+    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .summary-bar.good { background: linear-gradient(135deg, #0d4a2e, #1a7a4a); border: 1px solid #1a7a4a; }
+  .summary-bar.needs-work { background: linear-gradient(135deg, #4a1a0d, #7a2a1a); border: 1px solid #7a2a1a; }
+  .summary-bar .summary-icon { font-size: 36px; }
+  .summary-bar .summary-text h3 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 22px;
+    font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .summary-bar .summary-text p { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  .product-card {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 10px;
+    display: flex; align-items: flex-start; gap: 14px;
+    border-left: 4px solid transparent; transition: transform 0.15s;
+    text-decoration: none; color: inherit;
+    display: block;
+  }
+  .product-card:hover { transform: translateX(3px); }
+  .product-card.urgent { border-left-color: var(--warn); }
+  .product-card.moderate { border-left-color: #f5a623; }
+  .product-card.minor { border-left-color: var(--yellow); }
+  .product-card-inner { display: flex; align-items: flex-start; gap: 14px; }
+
+  .product-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .product-card.urgent .product-icon { background: rgba(255,90,54,0.12); }
+  .product-card.moderate .product-icon { background: rgba(245,166,35,0.12); }
+  .product-card.minor .product-icon { background: var(--yellow-dim); }
+
+  .product-info { flex: 1; }
+  .product-name { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .brand-badge {
+    font-size: 10px; font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1px; text-transform: uppercase;
+    background: var(--yellow-dim); color: var(--yellow);
+    border: 1px solid rgba(245,196,0,0.3);
+    border-radius: 4px; padding: 2px 6px;
+  }
+  .product-subname { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-style: italic; }
+  .product-reason { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
+  .product-dose {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--yellow-dim); border-radius: 8px;
+    padding: 5px 12px; font-size: 13px; font-weight: 600; color: var(--yellow);
+  }
+  .product-link-hint {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 8px; margin-left: 2px;
+  }
+  .product-link-hint svg { opacity: 0.6; }
+
+  /* PRODUCT CHOICE TOGGLE */
+  .choice-card {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    border-left: 4px solid transparent; overflow: hidden;
+  }
+  .choice-card.urgent { border-left-color: var(--warn); }
+  .choice-card.moderate { border-left-color: #f5a623; }
+  .choice-card.minor { border-left-color: var(--yellow); }
+
+  .choice-tabs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--navy-border);
+  }
+  .choice-tab {
+    padding: 10px 14px; font-size: 12px; font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer; text-align: center;
+    color: var(--text-muted); background: var(--navy);
+    transition: all 0.2s; border: none; user-select: none;
+  }
+  .choice-tab:first-child { border-right: 1px solid var(--navy-border); }
+  .choice-tab.active { background: var(--navy-card); color: var(--yellow); }
+  .choice-tab .tab-badge {
+    display: inline-block; font-size: 9px; padding: 1px 5px;
+    border-radius: 3px; margin-left: 5px; vertical-align: middle;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.5px;
+  }
+  .choice-tab .tab-badge.primary-badge { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(245,196,0,0.3); }
+  .choice-tab .tab-badge.alt-badge { background: rgba(138,170,200,0.12); color: var(--text-muted); border: 1px solid rgba(138,170,200,0.2); }
+  .choice-panel { padding: 18px; display: none; }
+  .choice-panel.active { display: block; }
+
+  .all-good-card {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-radius: var(--radius); padding: 32px 24px; text-align: center;
+  }
+  .all-good-card .big-icon { font-size: 52px; margin-bottom: 14px; }
+  .all-good-card h3 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 24px;
+    font-weight: 700; text-transform: uppercase; color: var(--ok); margin-bottom: 6px;
+  }
+  .all-good-card p { font-size: 14px; color: var(--text-muted); }
+
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-muted); margin: 20px 0 10px; padding-left: 4px;
+  }
+
+  /* ORDER CTA */
+  .order-cta {
+    background: var(--navy-card); border: 1px solid var(--navy-border);
+    border-top: 3px solid var(--yellow); border-radius: var(--radius);
+    padding: 24px; text-align: center; margin-top: 20px;
+  }
+  .order-cta h3 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 22px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--white); margin-bottom: 6px;
+  }
+  .order-cta p { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+
+  .order-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .order-btn-wa { grid-column: 1 / -1; }
+
+  .order-btn {
+    padding: 14px 10px; border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; border: none; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .order-btn.primary { background: var(--yellow); color: var(--navy); }
+  .order-btn.secondary { background: transparent; color: var(--text); border: 1.5px solid var(--navy-border); }
+  .order-btn.whatsapp { background: var(--wa-green); color: white; font-size: 15px; padding: 16px; }
+  .order-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .btn-retest {
+    width: 100%; background: none; border: 1.5px solid var(--navy-border);
+    border-radius: var(--radius); padding: 14px; font-size: 14px; font-weight: 600;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted); cursor: pointer;
+    margin-top: 12px; transition: all 0.2s;
+  }
+  .btn-retest:hover { border-color: var(--yellow); color: var(--yellow); }
+
+  /* LOADING */
+  .loader { display: none; text-align: center; padding: 60px 0; }
+  .loader.show { display: block; }
+  .wave-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .wave-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--yellow); animation: wave 1.2s ease-in-out infinite;
+  }
+  .wave-dot:nth-child(2) { animation-delay: 0.15s; }
+  .wave-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes wave {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-10px); opacity: 1; }
+  }
+  .loader p { font-size: 14px; color: var(--text-muted); }
+
+  .disclaimer {
+    text-align: center; font-size: 11px; color: var(--text-muted);
+    margin-top: 16px; line-height: 1.6; padding: 0 12px;
+  }
+
+  .wa-icon { width: 20px; height: 20px; fill: white; flex-shrink: 0; }
+
+  /* Divider between cards */
+  .card-divider { height: 1px; background: var(--navy-border); margin: 18px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img src="https://i0.wp.com/poolmedics.co.za/wp-content/uploads/2025/11/pool-medics-logo-small-yellow.png?fit=245%2C50&ssl=1" alt="Pool Medics" class="brand-logo">
+    <div class="brand-divider"></div>
+    <span class="brand-sub">Water Testing</span>
+  </div>
+  <h1 class="hero-title">Test Your Pool.<br><span>Balance It Right.</span></h1>
+  <p class="hero-sub">Enter your test strip results and we'll tell you exactly what your pool needs.</p>
+</header>
+
+<main>
+
+  <!-- FORM -->
+  <div id="form-section">
+
+    <!-- POOL TYPE -->
+    <div class="card">
+      <div class="card-title">Pool Type</div>
+      <div class="pool-type-row">
+        <div class="type-btn" id="type-fibreglass" onclick="selectType('fibreglass')">
+          <div class="type-icon">🏊</div>
+          <div class="type-label">Fibreglass</div>
+          <div class="type-sub">Smooth gel coat finish</div>
+        </div>
+        <div class="type-btn" id="type-marblite" onclick="selectType('marblite')">
+          <div class="type-icon">🪨</div>
+          <div class="type-label">Marblite / Plaster</div>
+          <div class="type-sub">Plastered or tiled surface</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POOL VOLUME -->
+    <div class="card">
+      <div class="card-title">Pool Volume</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.5;">Enter your pool dimensions to calculate the volume, or type it in directly below.</p>
+      <div class="calc-grid">
+        <div class="calc-field"><label>Length (m)</label><input type="number" id="dim-l" placeholder="e.g. 10" min="0" step="0.1" oninput="calcVolume()"></div>
+        <div class="calc-field"><label>Width (m)</label><input type="number" id="dim-w" placeholder="e.g. 5" min="0" step="0.1" oninput="calcVolume()"></div>
+        <div class="calc-field"><label>Avg depth (m)</label><input type="number" id="dim-d" placeholder="e.g. 1.5" min="0" step="0.1" oninput="calcVolume()"></div>
+      </div>
+      <div class="vol-result" id="vol-result">
+        <span class="vol-result-label">Volume (L) — calculated or type below</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="vol-manual-input" placeholder="— " min="1000" max="500000"
+            style="background:transparent;border:none;outline:none;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--yellow);letter-spacing:0.5px;width:120px;text-align:right;-moz-appearance:textfield;"
+            oninput="manualVolInput(this)">
+          <span style="font-size:15px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--yellow);">L</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEST RESULTS -->
+    <div class="card">
+      <div class="card-title">Water Test Results</div>
+
+      <div class="param-group">
+        <div class="param-label">
+          <span class="param-name">Free Chlorine</span>
+          <span class="param-range">Ideal: <span class="param-ideal">2–3 ppm</span></span>
+        </div>
+        <div class="input-row">
+          <input class="param-input" type="number" id="chlorine" placeholder="0.0" min="0" max="20" step="0.1" oninput="liveCheck(this, 2, 3)">
+          <span class="param-unit">ppm</span>
+          <span class="status-badge" id="chlorine-badge"></span>
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-label">
+          <span class="param-name">pH Level</span>
+          <span class="param-range">Ideal: <span class="param-ideal">7.2–7.6</span></span>
+        </div>
+        <div class="input-row">
+          <input class="param-input" type="number" id="ph" placeholder="0.0" min="0" max="14" step="0.1" oninput="liveCheck(this, 7.2, 7.6)">
+          <span class="param-unit">pH</span>
+          <span class="status-badge" id="ph-badge"></span>
+        </div>
+      </div>
+
+      <div class="param-group" style="margin-bottom:0">
+        <div class="param-label">
+          <span class="param-name">Total Alkalinity</span>
+          <span class="param-range">Ideal: <span class="param-ideal" id="alk-ideal">80–120 ppm</span></span>
+        </div>
+        <div class="input-row">
+          <input class="param-input" type="number" id="alkalinity" placeholder="0" min="0" max="400" step="1" oninput="liveCheckAlk(this)">
+          <span class="param-unit">ppm</span>
+          <span class="status-badge" id="alkalinity-badge"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISIBLE CONDITIONS -->
+    <div class="card">
+      <div class="card-title">Visible Conditions</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.5;">Tap any conditions you can currently see in your pool.</p>
+      <div class="condition-row">
+        <div class="condition-toggle" id="toggle-algae" onclick="toggleCondition('algae')">
+          <div class="condition-icon">🟢</div>
+          <div class="condition-text">
+            <div class="condition-name">Algae visible</div>
+            <div class="condition-desc">Green, black or brown growth on walls or floor</div>
+          </div>
+          <div class="condition-check" id="check-algae">✓</div>
+        </div>
+        <div class="condition-toggle" id="toggle-cloudy" onclick="toggleCondition('cloudy')">
+          <div class="condition-icon">☁️</div>
+          <div class="condition-text">
+            <div class="condition-name">Cloudy / milky water</div>
+            <div class="condition-desc">Water is dull or you can't see the bottom clearly</div>
+          </div>
+          <div class="condition-check" id="check-cloudy">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-analyse" onclick="analyse()">Analyse My Water →</button>
+    <p class="disclaimer">Results are guidelines based on standard pool chemistry. Always follow product label instructions. Add Pool Magnet only when there is no direct sunlight on the pool.</p>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="wave-dots">
+      <div class="wave-dot"></div><div class="wave-dot"></div><div class="wave-dot"></div>
+    </div>
+    <p>Analysing your water chemistry…</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div id="summary-bar"></div>
+    <div id="products-list"></div>
+    <button class="btn-retest" onclick="resetForm()">← Test Again</button>
+    <p class="disclaimer">Dosage recommendations are calculated for your pool volume. Results are a guide only — always test again after treatment.</p>
+  </div>
+
+</main>
+
+<script>
+  let poolVolume = null;
+  let poolType = null;
+  const conditions = { algae: false, cloudy: false };
+
+  // Product catalogue with URLs
+  const PRODUCTS = {
+    burnOut:     { url: 'https://poolmedics.co.za/product/bioguard-burn-out/' },
+    balPak200:   { url: 'https://poolmedics.co.za/product/bioguard-balance-pak-200/' },
+    lonSlo:      { url: 'https://poolmedics.co.za/product/bioguard-lo-n-slo/' },
+    balPak100:   { url: 'https://poolmedics.co.za/product/bioguard-balance-pak-100/' },
+    balPak300:   { url: 'https://poolmedics.co.za/product/bioguard-balance-pak-300/' },
+    scaleInhib:  { url: 'https://poolmedics.co.za/product/bioguard-scale-inhibitor/' },
+    sunShield:   { url: 'https://poolmedics.co.za/product/bioguard-sun-shield/' },
+    poolMagnet:  { url: 'https://poolmedics.co.za/product/pool-magnet/' },
+    msa11:       { url: 'https://poolmedics.co.za/product/msa-11/' },
+    algaeKiller: { url: 'https://poolmedics.co.za/product/algae-killer/' },
+    polysheen:   { url: 'https://poolmedics.co.za/product/polysheen-blue/' },
+    superClear:  { url: 'https://poolmedics.co.za/product/super-clear-tabs/' },
+  };
+
+  // WhatsApp number for Pool Medics — update to correct number
+  const WA_NUMBER = '27825551234';
+
+  function selectType(type) {
+    poolType = type;
+    document.getElementById('type-fibreglass').classList.toggle('selected', type === 'fibreglass');
+    document.getElementById('type-marblite').classList.toggle('selected', type === 'marblite');
+    // Update alkalinity ideal range label
+    const idealEl = document.getElementById('alk-ideal');
+    if (idealEl) idealEl.textContent = type === 'fibreglass' ? '125–150 ppm' : '80–120 ppm';
+    // Re-run live check if a value is already entered
+    const alkInput = document.getElementById('alkalinity');
+    if (alkInput && alkInput.value !== '') liveCheckAlk(alkInput);
+  }
+
+  function alkRange() {
+    return poolType === 'fibreglass' ? { min: 125, max: 150 } : { min: 80, max: 120 };
+  }
+
+  function liveCheckAlk(input) {
+    const { min, max } = alkRange();
+    liveCheck(input, min, max);
+  }
+
+  function calcVolume() {
+    const g = id => parseFloat(document.getElementById(id).value) || 0;
+    const l = g('dim-l'), w = g('dim-w'), d = g('dim-d');
+    const resultEl = document.getElementById('vol-result');
+    const inputEl  = document.getElementById('vol-manual-input');
+    if (l > 0 && w > 0 && d > 0) {
+      poolVolume = Math.round(l * w * d * 1000);
+      inputEl.value = poolVolume;
+      resultEl.classList.add('has-value');
+    } else {
+      poolVolume = null;
+      inputEl.value = '';
+      resultEl.classList.remove('has-value');
+    }
+  }
+
+  function manualVolInput(input) {
+    const v = parseFloat(input.value) || null;
+    poolVolume = v;
+    const resultEl = document.getElementById('vol-result');
+    resultEl.classList.toggle('has-value', !!v);
+    // Clear dimension fields so there's no confusion about source
+    if (v) {
+      ['dim-l','dim-w','dim-d'].forEach(id => document.getElementById(id).value = '');
+    }
+  }
+
+  function toggleCondition(key) {
+    conditions[key] = !conditions[key];
+    const toggle = document.getElementById('toggle-' + key);
+    toggle.classList.toggle('active', conditions[key]);
+  }
+
+  function liveCheck(input, min, max) {
+    const val = parseFloat(input.value);
+    const id = input.id;
+    const badge = document.getElementById(id + '-badge');
+    if (isNaN(val) || input.value === '') {
+      input.classList.remove('status-ok','status-warn');
+      badge.className = 'status-badge'; return;
+    }
+    if (val >= min && val <= max) {
+      input.classList.add('status-ok'); input.classList.remove('status-warn');
+      badge.className = 'status-badge ok'; badge.textContent = '✓ Good';
+    } else {
+      input.classList.add('status-warn'); input.classList.remove('status-ok');
+      badge.className = 'status-badge warn'; badge.textContent = '⚠ Off';
+    }
+  }
+
+  function getVal(id) {
+    const v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  }
+
+  function analyse() {
+    if (!poolType) { alert('Please select your pool type first.'); return; }
+    if (!poolVolume || poolVolume < 100) { alert('Please calculate or enter your pool volume first.'); return; }
+
+    const chlorine = getVal('chlorine');
+    const ph = getVal('ph');
+    const alkalinity = getVal('alkalinity');
+
+    if ([chlorine, ph, alkalinity].some(v => v === null)) {
+      alert('Please enter all test values to get your recommendations.'); return;
+    }
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('loader').classList.add('show');
+
+    setTimeout(() => {
+      document.getElementById('loader').classList.remove('show');
+      showResults(chlorine, ph, alkalinity);
+    }, 1800);
+  }
+
+  // Stored results for WhatsApp message
+  let lastProducts = [];
+
+  // Converts a raw amount to the nearest quarter-unit ceiling label
+  // unitSize = size of one pack (kg or ml), unitName = "bag"/"bottle"
+  function toPackLabel(amount, unitSize, unitName) {
+    const units = amount / unitSize;
+    // Round up to nearest quarter
+    const quarters = Math.ceil(units * 4);
+    const whole = Math.floor(quarters / 4);
+    const rem = quarters % 4;
+    const fracMap = { 0: '', 1: '¼', 2: '½', 3: '¾' };
+    const frac = fracMap[rem];
+    let label = '';
+    if (whole > 0 && frac) label = `${whole} ${frac} ${unitName}${whole !== 1 || rem > 0 ? 's' : ''}`;
+    else if (whole > 0)    label = `${whole} ${unitName}${whole !== 1 ? 's' : ''}`;
+    else                   label = `${frac} ${unitName}`;
+    return label;
+  }
+  const toBags    = kg  => toPackLabel(kg,   1,    'bag');
+  const toBottles = ml  => toPackLabel(ml,   1000, 'bottle');
+
+  function toCups(rawCups) {
+    const quarters = Math.ceil(rawCups * 4);
+    const whole = Math.floor(quarters / 4);
+    const rem = quarters % 4;
+    const fracMap = { 1: '1 quarter', 2: '½ a', 3: '3 quarter' };
+    if (rem === 0) return `${whole} cup${whole !== 1 ? 's' : ''}`;
+    const frac = fracMap[rem];
+    return whole > 0 ? `${whole} and ${frac} cups` : `${frac} cup`;
+  }
+
+  function showResults(chlorine, ph, alkalinity) {
+    const vol = poolVolume / 1000; // kL
+    const products = [];
+    const isFibreglass = poolType === 'fibreglass';
+
+    // --- CHLORINE ---
+    // Dosage: 0 ppm → 1.5 cups per 50 000L; 1 ppm → 1 cup per 50 000L; scale linearly for pool volume
+    if (chlorine < 2) {
+      const cupsPerUnit = chlorine <= 0.5 ? 1.5 : 1;
+      const rawCups = (poolVolume / 50000) * cupsPerUnit;
+      const reason = chlorine <= 0.5
+        ? `Chlorine is at ${chlorine} ppm — the pool is effectively unprotected. Add chlorine immediately before swimming.`
+        : `Chlorine is low at ${chlorine} ppm. Ideal range is 2–3 ppm. Top up to restore sanitation.`;
+      products.push({ priority: chlorine <= 0.5 ? 'urgent' : 'moderate', icon: '🧪', brand: 'BioGuard', name: 'BioGuard Chlorine', subname: 'Granular chlorine sanitiser', reason, dose: `${toCups(rawCups)} — dissolve in a bucket of water first, then pour around the pool`, productKey: 'burnOut' });
+    } else if (chlorine > 5) {
+      products.push({ priority: 'urgent', icon: '☀️', brand: null, name: 'Expose to sunlight — no chemicals needed', subname: null, reason: `Chlorine is too high (${chlorine} ppm). Leave pool uncovered and avoid swimming until it drops below 3 ppm.`, dose: 'No products needed', productKey: null });
+    }
+
+    // --- pH ---
+    if (ph < 7.2) {
+      const diff = (7.4 - ph);
+      const kg = diff * vol * 15 / 1000;
+      products.push({ priority: 'urgent', icon: '🔺', brand: 'BioGuard', name: 'BioGuard Balance Pak 200', subname: 'pH & Alkalinity Increaser (1kg bags)', reason: `pH is too low (${ph}). Acidic water irritates eyes and skin and corrodes equipment.`, dose: `${toBags(kg)} — test again in 4 hours`, productKey: 'balPak200' });
+    } else if (ph > 7.8) {
+      const diff = (ph - 7.4);
+      const kg = (diff * vol * 12 / 1000).toFixed(2);
+      products.push({ priority: 'urgent', icon: '🔻', brand: 'BioGuard', name: "BioGuard Lo 'n Slo", subname: 'pH & Alkalinity Decreaser', reason: `pH is too high (${ph}). High pH reduces chlorine effectiveness and causes cloudy water.`, dose: `Add ${kg}kg, test again in 4 hours`, productKey: 'lonSlo' });
+    }
+
+    // --- ALKALINITY ---
+    const alkMin = isFibreglass ? 125 : 80;
+    const alkMax = isFibreglass ? 150 : 120;
+    const alkTarget = isFibreglass ? 137 : 100; // midpoint for dosing target
+    if (alkalinity < alkMin) {
+      const kg = (alkTarget - alkalinity) * vol * 1.5 / 1000;
+      products.push({ priority: 'moderate', icon: '⚗️', brand: 'BioGuard', name: 'BioGuard Balance Pak 100', subname: 'Total Alkalinity Increaser (1kg bags)', reason: `Total Alkalinity is low (${alkalinity} ppm). Ideal for a ${isFibreglass ? 'fibreglass' : 'plaster'} pool is ${alkMin}–${alkMax} ppm. This causes pH to swing up and down unpredictably.`, dose: `${toBags(kg)} — spread over 2 days`, productKey: 'balPak100' });
+    } else if (alkalinity > alkMax) {
+      const kg = ((alkalinity - alkTarget) * vol * 1.0 / 1000).toFixed(2);
+      products.push({ priority: 'moderate', icon: '🧴', brand: 'BioGuard', name: "BioGuard Lo 'n Slo", subname: 'pH & Alkalinity Decreaser', reason: `Total Alkalinity is high (${alkalinity} ppm). Ideal for a ${isFibreglass ? 'fibreglass' : 'plaster'} pool is ${alkMin}–${alkMax} ppm. Causes cloudy water and scaling on surfaces.`, dose: `Add ${kg}kg, retest in 6 hours`, productKey: 'lonSlo' });
+    }
+
+    // --- POOL MAGNET (fibreglass only: pH < 6.8 OR alkalinity below fibreglass minimum) — always first ---
+    if (isFibreglass && (ph < 6.8 || alkalinity < alkMin)) {
+      const ml = (poolVolume / 10000) * 250;
+      products.unshift({ priority: 'moderate', icon: '🧲', brand: 'BioGuard', name: 'BioGuard Pool Magnet', subname: 'Fibreglass surface protector (1L bottles)', reason: `Your fibreglass pool needs Pool Magnet when pH is below 6.8 or alkalinity is low. Protects the gel coat surface from acid damage.`, dose: `${toBottles(ml)} — add directly to water, no direct sunlight`, note: 'Add when there is no direct sunlight on the pool.', productKey: 'poolMagnet' });
+    }
+
+    // --- ALGAE TREATMENT ---
+    if (conditions.algae) {
+      const msa11ml = (poolVolume / 10000) * 100;
+      const algaeKillerMl = (poolVolume / 10000) * 250;
+      products.push({
+        type: 'choice', priority: 'urgent', icon: '🦠',
+        reason: 'Visible algae detected. Treat immediately to prevent spreading.',
+        primary:  { brand: 'Pool Medics', name: 'MSA11 Algaecide',  subname: 'Fast-acting algaecide (1L bottles)', dose: `${toBottles(msa11ml)} — add directly to water`, productKey: 'msa11' },
+        alt:      { brand: 'Pool Medics', name: 'Algae Killer',      subname: 'Broad-spectrum algaecide (1L bottles)', dose: `${toBottles(algaeKillerMl)} — add directly to water`, productKey: 'algaeKiller' }
+      });
+    }
+
+    // --- CLOUDY WATER ---
+    if (conditions.cloudy) {
+      const polysheenMl = Math.round((poolVolume / 10000) * 15);
+      products.push({
+        type: 'choice', priority: 'moderate', icon: '💧',
+        reason: 'Cloudy or milky water indicates suspended particles. A clarifier will gather them for your filter to remove.',
+        primary:  { brand: 'BioGuard', name: 'BioGuard Polysheen Blue', subname: 'Liquid clarifier', dose: `${polysheenMl}ml — add directly to water`, productKey: 'polysheen' },
+        alt:      { brand: 'BioGuard', name: 'Super Clear Tabs',         subname: 'Tablet clarifier', dose: '2 tablets — any pool size', productKey: 'superClear' }
+      });
+    }
+
+    lastProducts = products;
+
+    // Summary
+    const summaryEl = document.getElementById('summary-bar');
+    if (products.length === 0) {
+      summaryEl.className = 'summary-bar good';
+      summaryEl.innerHTML = `<div class="summary-icon">🏊</div><div class="summary-text"><h3>Your water is perfectly balanced!</h3><p>No chemicals needed right now. Test again in 7 days.</p></div>`;
+    } else {
+      const urgentCount = products.filter(p => p.priority === 'urgent').length;
+      summaryEl.className = 'summary-bar needs-work';
+      summaryEl.innerHTML = `<div class="summary-icon">🔬</div><div class="summary-text"><h3>${products.length} adjustment${products.length > 1 ? 's' : ''} needed</h3><p>${urgentCount > 0 ? urgentCount + ' urgent issue' + (urgentCount > 1 ? 's' : '') + ' require immediate attention.' : 'Minor adjustments to get your water perfect.'}</p></div>`;
+    }
+
+    // Product list
+    const listEl = document.getElementById('products-list');
+    if (products.length === 0) {
+      listEl.innerHTML = `<div class="all-good-card"><div class="big-icon">✅</div><h3>All levels in range</h3><p>Enjoy your swim! We recommend retesting your water every 7 days.</p></div>`;
+    } else {
+      let html = '';
+      products.forEach(p => {
+        html += p.type === 'choice' ? choiceCardHTML(p) : productHTML(p);
+      });
+      listEl.innerHTML = html;
+    }
+
+    document.getElementById('results').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function productHTML(p) {
+    const url = p.productKey ? PRODUCTS[p.productKey]?.url : null;
+    const brandBadge = p.brand ? `<span class="brand-badge">${p.brand}</span>` : '';
+    const subname = p.subname ? `<div class="product-subname">${p.subname}</div>` : '';
+    const linkHint = url ? `<div class="product-link-hint"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> View product on poolmedics.co.za</div>` : '';
+    const noteHtml = p.note ? `<div style="font-size:11px;color:var(--warn);margin-top:6px;font-weight:600;">⚠ ${p.note}</div>` : '';
+    const inner = `<div class="product-card-inner">
+      <div class="product-icon">${p.icon}</div>
+      <div class="product-info">
+        <div class="product-name">${p.name} ${brandBadge}</div>
+        ${subname}
+        <div class="product-reason">${p.reason}</div>
+        <span class="product-dose">📦 ${p.dose}</span>
+        ${noteHtml}
+        ${linkHint}
+      </div>
+    </div>`;
+
+    if (url) {
+      return `<a class="product-card ${p.priority}" href="${url}" target="_blank" rel="noopener">${inner}</a>`;
+    }
+    return `<div class="product-card ${p.priority}">${inner}</div>`;
+  }
+
+  function choicePanelInner(opt) {
+    const url = opt.productKey ? PRODUCTS[opt.productKey]?.url : null;
+    const brandBadge = opt.brand ? `<span class="brand-badge">${opt.brand}</span>` : '';
+    const subname = opt.subname ? `<div class="product-subname">${opt.subname}</div>` : '';
+    const linkHint = url ? `<div class="product-link-hint"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> View product on poolmedics.co.za</div>` : '';
+    const nameEl = url
+      ? `<a href="${url}" target="_blank" rel="noopener" style="color:var(--white);text-decoration:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${opt.name} ${brandBadge}</a>`
+      : `<span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${opt.name} ${brandBadge}</span>`;
+    return `<div class="product-name" style="margin-bottom:2px;">${nameEl}</div>
+      ${subname}
+      <span class="product-dose">📦 ${opt.dose}</span>
+      ${linkHint}`;
+  }
+
+  function choiceCardHTML(p) {
+    const id = 'choice-' + Math.random().toString(36).slice(2, 7);
+    return `<div class="choice-card ${p.priority}">
+      <div style="padding:14px 18px 10px;display:flex;align-items:flex-start;gap:12px;">
+        <div class="product-icon" style="${p.priority==='urgent'?'background:rgba(255,90,54,0.12)':p.priority==='moderate'?'background:rgba(245,166,35,0.12)':'background:var(--yellow-dim)'}">${p.icon}</div>
+        <div style="flex:1;"><div class="product-reason" style="margin-bottom:0;">${p.reason}</div></div>
+      </div>
+      <div class="choice-tabs">
+        <div class="choice-tab active" id="${id}-tab-primary" onclick="switchTab('${id}','primary')">
+          ${p.primary.name.split(' ').slice(-1)[0]}<span class="tab-badge primary-badge">Primary</span>
+        </div>
+        <div class="choice-tab" id="${id}-tab-alt" onclick="switchTab('${id}','alt')">
+          ${p.alt.name.split(' ').slice(-1)[0]}<span class="tab-badge alt-badge">Alternative</span>
+        </div>
+      </div>
+      <div class="choice-panel active" id="${id}-panel-primary">${choicePanelInner(p.primary)}</div>
+      <div class="choice-panel" id="${id}-panel-alt">${choicePanelInner(p.alt)}</div>
+    </div>`;
+  }
+
+  function switchTab(id, which) {
+    ['primary','alt'].forEach(w => {
+      document.getElementById(`${id}-tab-${w}`).classList.toggle('active', w === which);
+      document.getElementById(`${id}-panel-${w}`).classList.toggle('active', w === which);
+    });
+  }
+
+  function openWhatsApp() {
+    if (lastProducts.length === 0) {
+      window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Hi Pool Medics! My pool water is perfectly balanced — no chemicals needed right now. Thanks!')}`, '_blank');
+      return;
+    }
+    const poolSizeStr = poolVolume >= 1000 ? (poolVolume >= 1000000 ? (poolVolume/1000000).toFixed(1)+'ML' : poolVolume.toLocaleString()+'L') : poolVolume+'L';
+    let msg = `Hi Pool Medics! 👋\n\nI've just tested my *${poolType}* pool (${poolSizeStr}) and need the following products:\n\n`;
+    lastProducts.forEach((p, i) => {
+      if (p.productKey) {
+        msg += `${i+1}. *${p.name}* — ${p.dose}\n`;
+      }
+    });
+    msg += `\nCould you arrange delivery or let me know if these are in stock? Thanks!`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function resetForm() {
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('form-section').style.display = 'block';
+    document.querySelectorAll('.param-input').forEach(i => { i.value = ''; i.className = 'param-input'; });
+    document.querySelectorAll('.status-badge').forEach(b => { b.className = 'status-badge'; });
+    ['dim-l','dim-w','dim-d'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('vol-manual-input').value = '';
+    document.getElementById('vol-result').classList.remove('has-value');
+    document.getElementById('type-fibreglass').classList.remove('selected');
+    document.getElementById('type-marblite').classList.remove('selected');
+    ['algae','cloudy'].forEach(k => { conditions[k] = false; document.getElementById('toggle-'+k).classList.remove('active'); });
+    poolVolume = null; poolType = null; lastProducts = [];
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+</script>
+</body>
+</html>
